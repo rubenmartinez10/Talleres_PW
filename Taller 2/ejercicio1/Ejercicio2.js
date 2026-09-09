@@ -76,6 +76,36 @@ app.post('/api/impuestos', (req, res) => {
     }
 });
 
+app.get('/api/impuestos', (req, res) => {
+    try {
+        const { pais, salario } = req.query;
+
+        if (!salario || isNaN(Number(salario)) || Number(salario) <= 0) {
+            return res.status(400).json({ error: "El valor ingresado como salario debe ser una cifra numérica positiva." });
+        }
+
+        if (!pais) {
+            return res.status(400).json({ error: "Se debe especificar el parámetro 'pais'." });
+        }
+
+        const identificador = depurarNombrePais(pais);
+        const datosTasa = TABLA_IMPUESTOS[identificador];
+
+        if (!datosTasa) {
+            return res.status(400).json({
+                error: `País no registrado: '${pais}'.`,
+                regionesAdmitidas: ["El Salvador", "Guatemala", "Costa Rica", "Honduras", "Panamá", "Nicaragua"]
+            });
+        }
+
+        const reporte = generarDesgloseFiscal(Number(salario), datosTasa);
+        return res.json(reporte);
+
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PUERTO_SERVER, () => {
     console.log(`Aplicación iniciada correctamente en http://localhost:${PUERTO_SERVER}`);
 });
